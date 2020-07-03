@@ -1,5 +1,8 @@
 import os
 
+#Hwan - load weights
+load_train_task_id = '3T256'
+
 train_task_id = '3T256'
 initial_epoch = 0
 epoch_num = 24
@@ -65,6 +68,10 @@ model_weights_path = 'model/weights_%s.{epoch:03d}-{val_loss:.3f}.h5' \
 saved_model_file_path = 'saved_model/east_model_%s.h5' % train_task_id
 saved_model_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
                                 % train_task_id
+
+# Hwan - load weights file path
+saved_model_load_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
+                                % load_train_task_id
 
 pixel_threshold = 0.9
 side_vertex_pixel_threshold = 0.9
