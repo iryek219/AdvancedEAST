@@ -1,9 +1,9 @@
 import os
 
 #Hwan - load weights
-load_train_task_id = '3T256'
+load_train_task_id = '3T736'
 
-train_task_id = '3T256'
+train_task_id = '3T736'
 initial_epoch = 0
 epoch_num = 24
 lr = 1e-3
@@ -32,9 +32,13 @@ else:
 steps_per_epoch = total_img * (1 - validation_split_ratio) // batch_size
 validation_steps = total_img * validation_split_ratio // batch_size
 
-data_dir = 'icpr/'
-origin_image_dir_name = 'image_10000/'
-origin_txt_dir_name = 'txt_10000/'
+#data_dir = 'icpr/'
+#origin_image_dir_name = 'image_10000/'
+#origin_txt_dir_name = 'txt_10000/'
+data_dir = 'train_6/'
+origin_image_dir_name = 'image_6/'
+origin_txt_dir_name = 'txt_6/'
+
 train_image_dir_name = 'images_%s/' % train_task_id
 train_label_dir_name = 'labels_%s/' % train_task_id
 show_gt_image_dir_name = 'show_gt_images_%s/' % train_task_id
