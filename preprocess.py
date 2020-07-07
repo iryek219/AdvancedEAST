@@ -116,7 +116,7 @@ def preprocess():
             # draw on the img
             draw = ImageDraw.Draw(show_gt_im)
             with open(os.path.join(origin_txt_dir,
-                                   o_img_fname[:-4] + '.txt'), 'r') as f:
+                                   o_img_fname[:-4] + '.txt'), 'r', encoding='ISO-8859-1') as f:
                 anno_list = f.readlines()
             xy_list_array = np.zeros((len(anno_list), 4, 2))
             for anno, i in zip(anno_list, range(len(anno_list))):
