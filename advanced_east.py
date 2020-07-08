@@ -19,6 +19,7 @@ east_network.compile(loss=quad_loss, optimizer=Adam(lr=cfg.lr,
 #if cfg.load_weights and os.path.exists(cfg.saved_model_weights_file_path):
 #    east_network.load_weights(cfg.saved_model_weights_file_path)
 if cfg.load_weights and os.path.exists(cfg.saved_model_load_weights_file_path):
+    print("\n####### Loading weights: ", cfg.saved_model_load_weights_file_path, " #######\n")
     east_network.load_weights(cfg.saved_model_load_weights_file_path)
 
 east_network.fit_generator(generator=gen(),
