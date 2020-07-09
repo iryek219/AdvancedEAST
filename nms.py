@@ -42,6 +42,7 @@ def rec_region_merge(region_list, m, S):
         if not region_neighbor(region_list[m]).isdisjoint(region_list[n]) or \
                 not region_neighbor(region_list[n]).isdisjoint(region_list[m]):
             # 第m与n相交
+            # Intersection of m and n // google translate
             tmp.append(n)
     for d in tmp:
         S.remove(d)
@@ -59,6 +60,7 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
                 region_list[k].add((i, j))
                 merge = True
                 # Fixme 重叠文本区域处理，存在和多个区域邻接的pixels，先都merge试试
+                # Fixme Overlap text area processing, there are pixels adjacent to multiple areas, try merge first // Google Translate
                 # break
         if not merge:
             region_list.append({(i, j)})
