@@ -4,6 +4,8 @@ import os
 load_train_task_id = '3T736'
 
 train_task_id = '3T736'
+train_host = '106'
+
 initial_epoch = 0
 epoch_num = 24
 lr = 1e-3
@@ -70,8 +72,10 @@ if not os.path.exists('saved_model'):
 model_weights_path = 'model/weights_%s.{epoch:03d}-{val_loss:.3f}.h5' \
                      % train_task_id
 saved_model_file_path = 'saved_model/east_model_%s.h5' % train_task_id
-saved_model_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
-                                % train_task_id
+#saved_model_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
+#                                % train_task_id
+saved_model_weights_file_path = '../AdvancedEAST-Data/trained-models/%s/east_model_weights_%s.h5'\
+                                %(train_host, train_task_id)
 
 # Hwan - load weights file path
 saved_model_load_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
