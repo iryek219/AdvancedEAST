@@ -81,8 +81,10 @@ saved_model_weights_file_path = '../AdvancedEAST-Data/trained-models/%s/east_mod
 saved_model_load_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
                                 % load_train_task_id
 
-pixel_threshold = 0.9
+#pixel_threshold = 0.9
+#side_vertex_pixel_threshold = 0.9
+pixel_threshold = 0.8
 side_vertex_pixel_threshold = 0.9
-trunc_threshold = 0.1
+trunc_threshold = 0.3
 predict_cut_text_line = False
 predict_write2txt = True
