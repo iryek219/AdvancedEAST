@@ -11,6 +11,10 @@ from network import East
 from preprocess import resize_image
 from nms import nms
 
+import os
+import time
+import datetime
+
 
 def sigmoid(x):
     """`y = 1 / (1 + exp(-x))`"""
@@ -31,13 +35,35 @@ def cut_text_line(geo, scale_ratio_w, scale_ratio_h, im_array, img_path, s):
     sub_im = image.array_to_img(sub_im_arr, scale=False)
     sub_im.save(img_path + '_subim%d.jpg' % s)
 
+def draw_activation(y, im, activation_pixels, act_file):
+    print("\nDrawing activation in ", act_file)
+    draw = ImageDraw.Draw(im)
+    for i, j in zip(activation_pixels[0], activation_pixels[1]):
+        px = (j + 0.5) * cfg.pixel_size
+        py = (i + 0.5) * cfg.pixel_size
+        line_width, line_color = 1, 'red'
+        if y[i, j, 1] >= cfg.side_vertex_pixel_threshold:
+            if y[i, j, 2] < cfg.trunc_threshold:
+                line_width, line_color = 2, 'yellow'
+            elif y[i, j, 2] >= 1 - cfg.trunc_threshold:
+                line_width, line_color = 2, 'green'
+        draw.line([(px - 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size),
+                   (px + 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size),
+                   (px + 0.5 * cfg.pixel_size, py + 0.5 * cfg.pixel_size),
+                   (px - 0.5 * cfg.pixel_size, py + 0.5 * cfg.pixel_size),
+                   (px - 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size)],
+                  width=line_width, fill=line_color)
+    im.save(act_file)
+
+def draw_prediction(im, pred):
+    print("\nDrawing prediction")
 
 def predict(east_detect, img_path, pixel_threshold, quiet=False):
     img = image.load_img(img_path)
-    d_wight, d_height = resize_image(img, cfg.max_predict_img_size)
-    img = img.resize((d_wight, d_height), Image.NEAREST).convert('RGB')
+    d_width, d_height = resize_image(img, cfg.max_predict_img_size)
+    img = img.resize((d_width, d_height), Image.NEAREST).convert('RGB')
     img = image.img_to_array(img)
-    img = preprocess_input(img) # Hwan , mode='tf')
+    img = preprocess_input(img) 
     x = np.expand_dims(img, axis=0)
     y = east_detect.predict(x)
 
@@ -48,28 +74,12 @@ def predict(east_detect, img_path, pixel_threshold, quiet=False):
     quad_scores, quad_after_nms = nms(y, activation_pixels)
     with Image.open(img_path) as im:
         im_array = image.img_to_array(im.convert('RGB'))
-        d_wight, d_height = resize_image(im, cfg.max_predict_img_size)
-        scale_ratio_w = d_wight / im.width
+        d_width, d_height = resize_image(im, cfg.max_predict_img_size)
+        scale_ratio_w = d_width / im.width
         scale_ratio_h = d_height / im.height
-        im = im.resize((d_wight, d_height), Image.NEAREST).convert('RGB')
+        im = im.resize((d_width, d_height), Image.NEAREST).convert('RGB')
         quad_im = im.copy()
-        draw = ImageDraw.Draw(im)
-        for i, j in zip(activation_pixels[0], activation_pixels[1]):
-            px = (j + 0.5) * cfg.pixel_size
-            py = (i + 0.5) * cfg.pixel_size
-            line_width, line_color = 1, 'red'
-            if y[i, j, 1] >= cfg.side_vertex_pixel_threshold:
-                if y[i, j, 2] < cfg.trunc_threshold:
-                    line_width, line_color = 2, 'yellow'
-                elif y[i, j, 2] >= 1 - cfg.trunc_threshold:
-                    line_width, line_color = 2, 'green'
-            draw.line([(px - 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size),
-                       (px + 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size),
-                       (px + 0.5 * cfg.pixel_size, py + 0.5 * cfg.pixel_size),
-                       (px - 0.5 * cfg.pixel_size, py + 0.5 * cfg.pixel_size),
-                       (px - 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size)],
-                      width=line_width, fill=line_color)
-        im.save(img_path + '_act.jpg')
+        draw_activation(y,im,activation_pixels, img_path+'_act.jpg')
         quad_draw = ImageDraw.Draw(quad_im)
         txt_items = []
         for score, geo, s in zip(quad_scores, quad_after_nms,
@@ -97,10 +107,10 @@ def predict(east_detect, img_path, pixel_threshold, quiet=False):
 
 def predict_txt(east_detect, img_path, txt_path, pixel_threshold, quiet=False):
     img = image.load_img(img_path)
-    d_wight, d_height = resize_image(img, cfg.max_predict_img_size)
-    scale_ratio_w = d_wight / img.width
+    d_width, d_height = resize_image(img, cfg.max_predict_img_size)
+    scale_ratio_w = d_width / img.width
     scale_ratio_h = d_height / img.height
-    img = img.resize((d_wight, d_height), Image.NEAREST).convert('RGB')
+    img = img.resize((d_width, d_height), Image.NEAREST).convert('RGB')
     img = image.img_to_array(img)
     img = preprocess_input(img) # Hwan - , mode='tf')
     x = np.expand_dims(img, axis=0)
@@ -131,6 +141,9 @@ def parse_args():
     parser.add_argument('--path', '-p',
                         default='demo/012.png',
                         help='image path')
+    parser.add_argument('--dir', '-d',
+                        default='demo/',
+                        help='image path')
     parser.add_argument('--threshold', '-t',
                         default=cfg.pixel_threshold,
                         help='pixel activation threshold')
@@ -140,6 +153,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     img_path = args.path
+    img_dir = args.dir
     threshold = float(args.threshold)
     print(img_path, threshold)
 
@@ -147,3 +161,22 @@ if __name__ == '__main__':
     east_detect = east.east_network()
     east_detect.load_weights(cfg.saved_model_weights_file_path)
     predict(east_detect, img_path, threshold)
+
+'''
+    start_time = time.time()
+    count = 0
+
+    dir_root = '../OCR-Test-Data/LOTT_E_REAL'
+    img_dir = ['/A003/', '/ETC/']
+    for p in img_dir:
+        d = dir_root+p
+        print("\n@@@@@ Folder: "+d)
+        for f in os.listdir(d):
+            if f.endswith('.png') or f.endswith('jpg'):
+                print('\n',f)
+                predict(east_detect, d+f, threshold)
+                count += 1
+                elapsed = time.time() - start_time
+                times = str(datetime.timedelta(seconds=elapsed)).split('.')
+                print('#{0:d} '.format(count), times[0], ' '+d+f)
+'''
