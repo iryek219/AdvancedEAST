@@ -104,6 +104,57 @@ def predict(east_detect, img_path, pixel_threshold, quiet=False):
             with open(img_path[:-4] + '.txt', 'w') as f_txt:
                 f_txt.writelines(txt_items)
 
+def predict_word(east_detect, img_path, pixel_threshold, quiet=False):
+    img = image.load_img(img_path)
+    
+    d_width, d_height = resize_image(img, cfg.max_predict_img_size)
+    scale_ratio_w = d_width / img.width
+    scale_ratio_h = d_height / img.height
+    img = img.resize((d_width, d_height), Image.NEAREST).convert('RGB')
+    
+    img = image.img_to_array(img)
+    img = preprocess_input(img) 
+    x = np.expand_dims(img, axis=0)
+    y = east_detect.predict(x)
+
+    y = np.squeeze(y, axis=0)
+    y[:, :, :3] = sigmoid(y[:, :, :3])
+    cond = np.greater_equal(y[:, :, 0], pixel_threshold)
+    activation_pixels = np.where(cond)
+    #quad_scores, quad_after_nms = nms(y, activation_pixels)
+    with Image.open(img_path) as im:
+        im_array = image.img_to_array(im.convert('RGB'))
+        d_width, d_height = resize_image(im, cfg.max_predict_img_size)
+        scale_ratio_w = d_width / im.width
+        scale_ratio_h = d_height / im.height
+        im = im.resize((d_width, d_height), Image.NEAREST).convert('RGB')
+
+        quad_im = im.copy()
+        draw_activation(y,im,activation_pixels, img_path+'_act.jpg')
+
+        quad_draw = ImageDraw.Draw(quad_im)
+        txt_items = []
+        for score, geo, s in zip(quad_scores, quad_after_nms,
+                                 range(len(quad_scores))):
+            if np.amin(score) > 0:
+                quad_draw.line([tuple(geo[0]),
+                                tuple(geo[1]),
+                                tuple(geo[2]),
+                                tuple(geo[3]),
+                                tuple(geo[0])], width=2, fill='red')
+                if cfg.predict_cut_text_line:
+                    cut_text_line(geo, scale_ratio_w, scale_ratio_h, im_array,
+                                  img_path, s)
+                rescaled_geo = geo / [scale_ratio_w, scale_ratio_h]
+                rescaled_geo_list = np.reshape(rescaled_geo, (8,)).tolist()
+                txt_item = ','.join(map(str, rescaled_geo_list))
+                txt_items.append(txt_item + '\n')
+            elif not quiet:
+                print('quad invalid with vertex num less then 4.')
+        quad_im.save(img_path + '_predict.jpg')
+        if cfg.predict_write2txt and len(txt_items) > 0:
+            with open(img_path[:-4] + '.txt', 'w') as f_txt:
+                f_txt.writelines(txt_items)
 
 def predict_txt(east_detect, img_path, txt_path, pixel_threshold, quiet=False):
     img = image.load_img(img_path)
