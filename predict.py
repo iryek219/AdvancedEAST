@@ -53,6 +53,7 @@ def draw_activation(y, im, activation_pixels, act_file):
                    (px - 0.5 * cfg.pixel_size, py + 0.5 * cfg.pixel_size),
                    (px - 0.5 * cfg.pixel_size, py - 0.5 * cfg.pixel_size)],
                   width=line_width, fill=line_color)
+    im.show()
     im.save(act_file)
 
 def draw_prediction(im, pred):
@@ -60,24 +61,27 @@ def draw_prediction(im, pred):
 
 def predict(east_detect, img_path, pixel_threshold, quiet=False):
     img = image.load_img(img_path)
+
     d_width, d_height = resize_image(img, cfg.max_predict_img_size)
     img = img.resize((d_width, d_height), Image.NEAREST).convert('RGB')
+
     img = image.img_to_array(img)
     img = preprocess_input(img) 
     x = np.expand_dims(img, axis=0)
     y = east_detect.predict(x)
-
     y = np.squeeze(y, axis=0)
     y[:, :, :3] = sigmoid(y[:, :, :3])
     cond = np.greater_equal(y[:, :, 0], pixel_threshold)
     activation_pixels = np.where(cond)
     quad_scores, quad_after_nms = nms(y, activation_pixels)
+
     with Image.open(img_path) as im:
         im_array = image.img_to_array(im.convert('RGB'))
         d_width, d_height = resize_image(im, cfg.max_predict_img_size)
         scale_ratio_w = d_width / im.width
         scale_ratio_h = d_height / im.height
         im = im.resize((d_width, d_height), Image.NEAREST).convert('RGB')
+
         quad_im = im.copy()
         draw_activation(y,im,activation_pixels, img_path+'_act.jpg')
         quad_draw = ImageDraw.Draw(quad_im)
@@ -104,46 +108,40 @@ def predict(east_detect, img_path, pixel_threshold, quiet=False):
             with open(img_path[:-4] + '.txt', 'w') as f_txt:
                 f_txt.writelines(txt_items)
 
-def predict_word(east_detect, img_path, pixel_threshold, quiet=False):
-    img = image.load_img(img_path)
-    
-    d_width, d_height = resize_image(img, cfg.max_predict_img_size)
-    scale_ratio_w = d_width / img.width
-    scale_ratio_h = d_height / img.height
+def predict_word(east_detect, img, max_predict_img_size, pixel_threshold, 
+                predict_cut_text_line, predict_write2txt, img_path, quiet=False):
+    im_act = img.copy()
+    im_act_array = image.img_to_array(im_act.convert('RGB'))
+
+    d_width, d_height = resize_image(img, max_predict_img_size)
     img = img.resize((d_width, d_height), Image.NEAREST).convert('RGB')
-    
+
+    im_act = im_act.resize((d_width, d_height), Image.NEAREST).convert('RGB')
+    scale_ratio_w = d_width / im_act.width
+    scale_ratio_h = d_height / im_act.height
+    quad_im = im_act.copy()
+
     img = image.img_to_array(img)
     img = preprocess_input(img) 
     x = np.expand_dims(img, axis=0)
     y = east_detect.predict(x)
-
     y = np.squeeze(y, axis=0)
     y[:, :, :3] = sigmoid(y[:, :, :3])
     cond = np.greater_equal(y[:, :, 0], pixel_threshold)
+
     activation_pixels = np.where(cond)
-    #quad_scores, quad_after_nms = nms(y, activation_pixels)
-    with Image.open(img_path) as im:
-        im_array = image.img_to_array(im.convert('RGB'))
-        d_width, d_height = resize_image(im, cfg.max_predict_img_size)
-        scale_ratio_w = d_width / im.width
-        scale_ratio_h = d_height / im.height
-        im = im.resize((d_width, d_height), Image.NEAREST).convert('RGB')
+    draw_activation(y, im_act, activation_pixels, img_path+'_act.jpg')
 
-        quad_im = im.copy()
-        draw_activation(y,im,activation_pixels, img_path+'_act.jpg')
+    quad_scores, quad_after_nms = nms(y, activation_pixels)
 
-        quad_draw = ImageDraw.Draw(quad_im)
-        txt_items = []
-        for score, geo, s in zip(quad_scores, quad_after_nms,
-                                 range(len(quad_scores))):
+    quad_draw= ImageDraw.Draw(quad_im)
+    txt_items = []
+    for score, geo, s in zip(quad_scores, quad_after_nms, range(len(quad_scores))):
             if np.amin(score) > 0:
-                quad_draw.line([tuple(geo[0]),
-                                tuple(geo[1]),
-                                tuple(geo[2]),
-                                tuple(geo[3]),
-                                tuple(geo[0])], width=2, fill='red')
-                if cfg.predict_cut_text_line:
-                    cut_text_line(geo, scale_ratio_w, scale_ratio_h, im_array,
+                quad_draw.line([tuple(geo[0]), tuple(geo[1]), tuple(geo[2]), 
+                                tuple(geo[3]), tuple(geo[0])], width=2, fill='red')
+                if predict_cut_text_line:
+                    cut_text_line(geo, scale_ratio_w, scale_ratio_h, im_act_array,
                                   img_path, s)
                 rescaled_geo = geo / [scale_ratio_w, scale_ratio_h]
                 rescaled_geo_list = np.reshape(rescaled_geo, (8,)).tolist()
@@ -151,10 +149,11 @@ def predict_word(east_detect, img_path, pixel_threshold, quiet=False):
                 txt_items.append(txt_item + '\n')
             elif not quiet:
                 print('quad invalid with vertex num less then 4.')
-        quad_im.save(img_path + '_predict.jpg')
-        if cfg.predict_write2txt and len(txt_items) > 0:
-            with open(img_path[:-4] + '.txt', 'w') as f_txt:
-                f_txt.writelines(txt_items)
+    quad_im.show()
+    quad_im.save(img_path + '_predict.jpg')
+    if predict_write2txt and len(txt_items) > 0:
+        with open(img_path[:-4] + '.txt', 'w') as f_txt:
+            f_txt.writelines(txt_items)
 
 def predict_txt(east_detect, img_path, txt_path, pixel_threshold, quiet=False):
     img = image.load_img(img_path)
@@ -186,20 +185,18 @@ def predict_txt(east_detect, img_path, txt_path, pixel_threshold, quiet=False):
         with open(txt_path, 'w') as f_txt:
             f_txt.writelines(txt_items)
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', '-p',
                         default='demo/012.png',
                         help='image path')
     parser.add_argument('--dir', '-d',
-                        default='demo/',
+                        default='',
                         help='image path')
     parser.add_argument('--threshold', '-t',
                         default=cfg.pixel_threshold,
                         help='pixel activation threshold')
     return parser.parse_args()
-
 
 if __name__ == '__main__':
     args = parse_args()
@@ -211,7 +208,35 @@ if __name__ == '__main__':
     east = East()
     east_detect = east.east_network()
     east_detect.load_weights(cfg.saved_model_weights_file_path)
-    predict(east_detect, img_path, threshold)
+
+    if len(img_dir)==0:
+        #predict(east_detect, img_path, threshold)
+        with Image.open(img_path) as im:
+            predict_word(east_detect, im, cfg.max_predict_img_size,
+                        cfg.pixel_threshold,
+                        cfg.predict_cut_text_line,
+                        cfg.predict_write2txt, 
+                        img_path)
+    else:
+        start_time = time.time()
+        count = 0
+        if not img_dir.endswith('/'):
+            img_dir += '/'
+        print("\n@@@@@ Folder: "+img_dir)
+        for f in os.listdir(img_dir):
+            if f.endswith('.png') or f.endswith('jpg'):
+                print('\n',f)
+                with Image.open(img_dir+f) as im:
+                    predict_word(east_detect, im, cfg.max_predict_img_size,
+                        cfg.pixel_threshold,
+                        cfg.predict_cut_text_line,
+                        cfg.predict_write2txt, 
+                        img_dir)
+                    count += 1
+                    elapsed = time.time() - start_time
+                    times = str(datetime.timedelta(seconds=elapsed)).split('.')
+                    print('#{0:d} '.format(count), times[0], ' '+f)
+
 
 '''
     start_time = time.time()

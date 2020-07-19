@@ -51,7 +51,7 @@ def rec_region_merge(region_list, m, S):
     return rows
 
 
-def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
+def nms(predict, activation_pixels, vertex_threshold=cfg.side_vertex_pixel_threshold):
     region_list = []
     for i, j in zip(activation_pixels[0], activation_pixels[1]):
         merge = False
@@ -64,6 +64,7 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
                 # break
         if not merge:
             region_list.append({(i, j)})
+
     D = region_group(region_list)
     quad_list = np.zeros((len(D), 4, 2))
     score_list = np.zeros((len(D), 4))
@@ -72,7 +73,7 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
         for row in group:
             for ij in region_list[row]:
                 score = predict[ij[0], ij[1], 1]
-                if score >= threshold:
+                if score >= vertex_threshold:
                     ith_score = predict[ij[0], ij[1], 2:3]
                     if not (cfg.trunc_threshold <= ith_score < 1 -
                             cfg.trunc_threshold):
@@ -80,9 +81,19 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
                         total_score[ith * 2:(ith + 1) * 2] += score
                         px = (ij[1] + 0.5) * cfg.pixel_size
                         py = (ij[0] + 0.5) * cfg.pixel_size
-                        p_v = [px, py] + np.reshape(predict[ij[0], ij[1], 3:7],
-                                              (2, 2))
+                        t37 = np.reshape(predict[ij[0], ij[1], 3:7], (2, 2))
+                        p_v = [px, py] + t37
+                        #p_v = [px, py] + np.reshape(predict[ij[0], ij[1], 3:7], (2, 2))
                         quad_list[g_th, ith * 2:(ith + 1) * 2] += score * p_v
         score_list[g_th] = total_score[:, 0]
         quad_list[g_th] /= (total_score + cfg.epsilon)
     return score_list, quad_list
+
+'''
+    rg = region_group(region_list)
+    word_list = np.zeros((len(rg),4,2))
+    wscore_list = np.zeros((len(rg),4))
+    for g, gi in zip(rg, range(len(rg))):
+        total_score = np.zeros((4,2))
+        for row in g:
+'''
