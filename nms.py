@@ -2,6 +2,10 @@
 import numpy as np
 
 import cfg
+import qhull_2d as qhull
+import min_bounding_rect as minbr
+
+import matplotlib.pyplot as plt
 
 
 def should_merge(region, i, j):
@@ -65,6 +69,29 @@ def nms(predict, activation_pixels, vertex_threshold=cfg.side_vertex_pixel_thres
         if not merge:
             region_list.append({(i, j)})
 
+    #fig, ax = plt.subplot()
+
+    rg = region_group(region_list)
+    word_list = np.zeros((len(rg),4,2))
+    #group_list = 
+    for g, gi in zip(rg, range(len(rg))):
+        group_members = []
+        for row in g:
+            for ij in region_list[row]:
+                group_members.append((float(ij[1]), float(ij[0])) )
+        if len(group_members)>0:
+            xy_points = np.array(group_members)
+            xy_points = (xy_points+0.5) * cfg.pixel_size
+            hull_points = qhull.qhull2D(xy_points)
+            hull_points = hull_points[::-1]
+            print('Convex hull points: \n', hull_points, "\n")
+            # Find minimum area bounding rectangle
+            (rot_angle, area, width, height, center_point, word_list[gi]) \
+                = minbr.minBoundingRect(hull_points)
+            #plt.scatter(xy_points[:,1], xy_points[:,0])
+            #plt.plot(word_list[gi][:,1], word_list[gi][:,0])
+    #plt.show()
+
     D = region_group(region_list)
     quad_list = np.zeros((len(D), 4, 2))
     score_list = np.zeros((len(D), 4))
@@ -87,13 +114,5 @@ def nms(predict, activation_pixels, vertex_threshold=cfg.side_vertex_pixel_thres
                         quad_list[g_th, ith * 2:(ith + 1) * 2] += score * p_v
         score_list[g_th] = total_score[:, 0]
         quad_list[g_th] /= (total_score + cfg.epsilon)
-    return score_list, quad_list
+    return score_list, quad_list, word_list
 
-'''
-    rg = region_group(region_list)
-    word_list = np.zeros((len(rg),4,2))
-    wscore_list = np.zeros((len(rg),4))
-    for g, gi in zip(rg, range(len(rg))):
-        total_score = np.zeros((4,2))
-        for row in g:
-'''

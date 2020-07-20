@@ -73,7 +73,7 @@ def predict(east_detect, img_path, pixel_threshold, quiet=False):
     y[:, :, :3] = sigmoid(y[:, :, :3])
     cond = np.greater_equal(y[:, :, 0], pixel_threshold)
     activation_pixels = np.where(cond)
-    quad_scores, quad_after_nms = nms(y, activation_pixels)
+    quad_scores, quad_after_nms, word_list = nms(y, activation_pixels)
 
     with Image.open(img_path) as im:
         im_array = image.img_to_array(im.convert('RGB'))
@@ -103,6 +103,9 @@ def predict(east_detect, img_path, pixel_threshold, quiet=False):
                 txt_items.append(txt_item + '\n')
             elif not quiet:
                 print('quad invalid with vertex num less then 4.')
+        
+        for word in word_list:
+            quad_draw.line([tuple(word[0], word[1], word[2], word[3], word[0])], width=2, fill='blue')
         quad_im.save(img_path + '_predict.jpg')
         if cfg.predict_write2txt and len(txt_items) > 0:
             with open(img_path[:-4] + '.txt', 'w') as f_txt:
@@ -132,7 +135,8 @@ def predict_word(east_detect, img, max_predict_img_size, pixel_threshold,
     activation_pixels = np.where(cond)
     draw_activation(y, im_act, activation_pixels, img_path+'_act.jpg')
 
-    quad_scores, quad_after_nms = nms(y, activation_pixels)
+    #quad_scores, quad_after_nms = nms(y, activation_pixels)
+    quad_scores, quad_after_nms, word_list = nms(y, activation_pixels)
 
     quad_draw= ImageDraw.Draw(quad_im)
     txt_items = []
@@ -149,6 +153,9 @@ def predict_word(east_detect, img, max_predict_img_size, pixel_threshold,
                 txt_items.append(txt_item + '\n')
             elif not quiet:
                 print('quad invalid with vertex num less then 4.')
+    for word in word_list:
+        quad_draw.line([tuple(word[0]), tuple(word[1]), tuple(word[2]), \
+            tuple(word[3]), tuple(word[0])], width=2, fill='blue')
     quad_im.show()
     quad_im.save(img_path + '_predict.jpg')
     if predict_write2txt and len(txt_items) > 0:
