@@ -5,9 +5,6 @@ import cfg
 import qhull_2d as qhull
 import min_bounding_rect as minbr
 
-import matplotlib.pyplot as plt
-
-
 def should_merge(region, i, j):
     neighbor = {(i, j - 1)}
     return not region.isdisjoint(neighbor)
@@ -69,11 +66,8 @@ def nms(predict, activation_pixels, vertex_threshold=cfg.side_vertex_pixel_thres
         if not merge:
             region_list.append({(i, j)})
 
-    #fig, ax = plt.subplot()
-
     rg = region_group(region_list)
     word_list = np.zeros((len(rg),4,2))
-    #group_list = 
     for g, gi in zip(rg, range(len(rg))):
         group_members = []
         for row in g:
@@ -84,13 +78,9 @@ def nms(predict, activation_pixels, vertex_threshold=cfg.side_vertex_pixel_thres
             xy_points = (xy_points+0.5) * cfg.pixel_size
             hull_points = qhull.qhull2D(xy_points)
             hull_points = hull_points[::-1]
-            print('Convex hull points: \n', hull_points, "\n")
             # Find minimum area bounding rectangle
             (rot_angle, area, width, height, center_point, word_list[gi]) \
                 = minbr.minBoundingRect(hull_points)
-            #plt.scatter(xy_points[:,1], xy_points[:,0])
-            #plt.plot(word_list[gi][:,1], word_list[gi][:,0])
-    #plt.show()
 
     D = region_group(region_list)
     quad_list = np.zeros((len(D), 4, 2))
