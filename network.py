@@ -1,8 +1,10 @@
 # coding=utf-8
-from keras import Input, Model
-from keras.applications.vgg16 import VGG16
-from keras.layers import Concatenate, Conv2D, UpSampling2D, BatchNormalization
-
+#from keras import Input, Model
+#from keras.applications.vgg16 import VGG16
+#from keras.layers import Concatenate, Conv2D, UpSampling2D, BatchNormalization
+from tensorflow.keras import Input, Model
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.layers import Concatenate, Conv2D, UpSampling2D, BatchNormalization
 import cfg
 
 """

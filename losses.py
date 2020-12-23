@@ -13,8 +13,8 @@ def quad_loss(y_true, y_pred):
     predicts = tf.nn.sigmoid(logits)
     # log +epsilon for stable cal
     inside_score_loss = tf.reduce_mean(
-        -1 * (beta * labels * tf.log(predicts + cfg.epsilon) +
-              (1 - beta) * (1 - labels) * tf.log(1 - predicts + cfg.epsilon)))
+        -1 * (beta * labels * tf.math.log(predicts + cfg.epsilon) +
+              (1 - beta) * (1 - labels) * tf.math.log(1 - predicts + cfg.epsilon)))
     inside_score_loss *= cfg.lambda_inside_score_loss
 
     # loss for side_vertex_code
@@ -23,9 +23,9 @@ def quad_loss(y_true, y_pred):
     vertex_beta = 1 - (tf.reduce_mean(y_true[:, :, :, 1:2])
                        / (tf.reduce_mean(labels) + cfg.epsilon))
     vertex_predicts = tf.nn.sigmoid(vertex_logits)
-    pos = -1 * vertex_beta * vertex_labels * tf.log(vertex_predicts +
+    pos = -1 * vertex_beta * vertex_labels * tf.math.log(vertex_predicts +
                                                     cfg.epsilon)
-    neg = -1 * (1 - vertex_beta) * (1 - vertex_labels) * tf.log(
+    neg = -1 * (1 - vertex_beta) * (1 - vertex_labels) * tf.math.log(
         1 - vertex_predicts + cfg.epsilon)
     positive_weights = tf.cast(tf.equal(y_true[:, :, :, 0], 1), tf.float32)
     side_vertex_code_loss = \

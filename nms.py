@@ -2,7 +2,8 @@
 import numpy as np
 
 import cfg
-
+import qhull_2d as qhull
+import min_bounding_rect as minbr
 
 def should_merge(region, i, j):
     neighbor = {(i, j - 1)}
@@ -42,6 +43,7 @@ def rec_region_merge(region_list, m, S):
         if not region_neighbor(region_list[m]).isdisjoint(region_list[n]) or \
                 not region_neighbor(region_list[n]).isdisjoint(region_list[m]):
             # 第m与n相交
+            # Intersection of m and n // google translate
             tmp.append(n)
     for d in tmp:
         S.remove(d)
@@ -50,7 +52,7 @@ def rec_region_merge(region_list, m, S):
     return rows
 
 
-def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
+def nms(predict, activation_pixels, vertex_threshold=cfg.side_vertex_pixel_threshold):
     region_list = []
     for i, j in zip(activation_pixels[0], activation_pixels[1]):
         merge = False
@@ -59,9 +61,27 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
                 region_list[k].add((i, j))
                 merge = True
                 # Fixme 重叠文本区域处理，存在和多个区域邻接的pixels，先都merge试试
+                # Fixme Overlap text area processing, there are pixels adjacent to multiple areas, try merge first // Google Translate
                 # break
         if not merge:
             region_list.append({(i, j)})
+
+    rg = region_group(region_list)
+    word_list = np.zeros((len(rg),4,2))
+    for g, gi in zip(rg, range(len(rg))):
+        group_members = []
+        for row in g:
+            for ij in region_list[row]:
+                group_members.append((float(ij[1]), float(ij[0])) )
+        if len(group_members)>0:
+            xy_points = np.array(group_members)
+            xy_points = (xy_points+0.5) * cfg.pixel_size
+            hull_points = qhull.qhull2D(xy_points)
+            hull_points = hull_points[::-1]
+            # Find minimum area bounding rectangle
+            (rot_angle, area, width, height, center_point, word_list[gi]) \
+                = minbr.minBoundingRect(hull_points)
+
     D = region_group(region_list)
     quad_list = np.zeros((len(D), 4, 2))
     score_list = np.zeros((len(D), 4))
@@ -70,7 +90,7 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
         for row in group:
             for ij in region_list[row]:
                 score = predict[ij[0], ij[1], 1]
-                if score >= threshold:
+                if score >= vertex_threshold:
                     ith_score = predict[ij[0], ij[1], 2:3]
                     if not (cfg.trunc_threshold <= ith_score < 1 -
                             cfg.trunc_threshold):
@@ -78,9 +98,11 @@ def nms(predict, activation_pixels, threshold=cfg.side_vertex_pixel_threshold):
                         total_score[ith * 2:(ith + 1) * 2] += score
                         px = (ij[1] + 0.5) * cfg.pixel_size
                         py = (ij[0] + 0.5) * cfg.pixel_size
-                        p_v = [px, py] + np.reshape(predict[ij[0], ij[1], 3:7],
-                                              (2, 2))
+                        t37 = np.reshape(predict[ij[0], ij[1], 3:7], (2, 2))
+                        p_v = [px, py] + t37
+                        #p_v = [px, py] + np.reshape(predict[ij[0], ij[1], 3:7], (2, 2))
                         quad_list[g_th, ith * 2:(ith + 1) * 2] += score * p_v
         score_list[g_th] = total_score[:, 0]
         quad_list[g_th] /= (total_score + cfg.epsilon)
-    return score_list, quad_list
+    return score_list, quad_list, word_list
+

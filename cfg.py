@@ -1,13 +1,32 @@
 import os
 
-train_task_id = '3T256'
+train_host = '106'
+
+#load_train_task_id = None
+#train_task_id = '3T256'
+
+#load_train_task_id = '3T256'
+#train_task_id = '3T384'
+
+#load_train_task_id = '3T384'
+#train_task_id = '3T512'
+
+#load_train_task_id = '3T512'
+#train_task_id = '3T640'
+
+load_train_task_id = '3T640'
+train_task_id = '3T736'
+
+#train_task_id = '3T512'
+
 initial_epoch = 0
 epoch_num = 24
 lr = 1e-3
 decay = 5e-4
 # clipvalue = 0.5  # default 0.5, 0 means no clip
 patience = 5
-load_weights = False
+#load_weights = False
+load_weights = True
 lambda_inside_score_loss = 4.0
 lambda_side_vertex_code_loss = 1.0
 lambda_side_vertex_coord_loss = 1.0
@@ -60,14 +79,17 @@ if not os.path.exists('model'):
 if not os.path.exists('saved_model'):
     os.mkdir('saved_model')
 
-model_weights_path = 'model/weights_%s.{epoch:03d}-{val_loss:.3f}.h5' \
-                     % train_task_id
-saved_model_file_path = 'saved_model/east_model_%s.h5' % train_task_id
-saved_model_weights_file_path = 'saved_model/east_model_weights_%s.h5'\
-                                % train_task_id
+model_weights_path = 'model/weights_%s_%s.{epoch:03d}-{val_loss:.3f}.h5' \
+                     % (train_task_id, train_host)
+#saved_model_file_path = 'saved_model/east_model_%s_%s.h5' % (train_task_id, train_host)
+saved_model_file_path = 'saved_model/east_model_%s_%s' %(train_task_id, train_host)
+saved_model_weights_file_path = 'saved_model/east_model_weights_%s_%s.h5' %(train_task_id, train_host)
 
-pixel_threshold = 0.9
+saved_model_load_weights_file_path = 'saved_model/east_model_weights_%s_%s.h5'\
+                                % (load_train_task_id, train_host)
+
+pixel_threshold = 0.8
 side_vertex_pixel_threshold = 0.9
-trunc_threshold = 0.1
+trunc_threshold = 0.3
 predict_cut_text_line = False
 predict_write2txt = True

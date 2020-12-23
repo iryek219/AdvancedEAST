@@ -1,6 +1,8 @@
 import os
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.optimizers import Adam
+#from keras.callbacks import EarlyStopping, ModelCheckpoint
+#from keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.optimizers import Adam
 
 import cfg
 from network import East
@@ -13,10 +15,18 @@ east_network.summary()
 east_network.compile(loss=quad_loss, optimizer=Adam(lr=cfg.lr,
                                                     # clipvalue=cfg.clipvalue,
                                                     decay=cfg.decay))
-if cfg.load_weights and os.path.exists(cfg.saved_model_weights_file_path):
-    east_network.load_weights(cfg.saved_model_weights_file_path)
 
-east_network.fit_generator(generator=gen(),
+#Hwan - load weights
+#if cfg.load_weights and os.path.exists(cfg.saved_model_weights_file_path):
+#    east_network.load_weights(cfg.saved_model_weights_file_path)
+
+if cfg.load_weights and os.path.exists(cfg.saved_model_load_weights_file_path):
+    print("\n####### Loading weights: ", cfg.saved_model_load_weights_file_path, " #######\n")
+    east_network.load_weights(cfg.saved_model_load_weights_file_path)
+
+#east_network.fit_generator(generator=gen(),
+g = gen()
+east_network.fit( g,
                            steps_per_epoch=cfg.steps_per_epoch,
                            epochs=cfg.epoch_num,
                            validation_data=gen(is_val=True),
@@ -29,5 +39,6 @@ east_network.fit_generator(generator=gen(),
                                                save_best_only=True,
                                                save_weights_only=True,
                                                verbose=1)])
-east_network.save(cfg.saved_model_file_path)
+#east_network.save(cfg.saved_model_file_path)
+east_network.save(cfg.saved_model_file_path, include_optimizer=False)
 east_network.save_weights(cfg.saved_model_weights_file_path)
