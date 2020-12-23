@@ -215,11 +215,17 @@ if __name__ == '__main__':
     threshold = float(args.threshold)
     print(img_path, threshold)
 
+# at Selvas
     #east = East()
     #east_detect = east.east_network()
     #east_detect.load_weights(cfg.saved_model_weights_file_path)
     east_detect=tf.keras.models.load_model(cfg.saved_model_file_path)
     
+# at Github
+    east = East()
+    east_detect = east.east_network()
+    east_detect.load_weights(cfg.saved_model_weights_file_path)
+
     if len(img_dir)==0:
         #predict(east_detect, img_path, threshold)
         with Image.open(img_path) as im:

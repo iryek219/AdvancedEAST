@@ -14,10 +14,11 @@ train_host = '106'
 #load_train_task_id = '3T512'
 #train_task_id = '3T640'
 
-load_train_task_id = '3T640'
-train_task_id = '3T736'
+#load_train_task_id = '3T640'
 
-#train_task_id = '3T512'
+#Hwan - load weights
+load_train_task_id = '3T736'
+train_task_id = '3T736'
 
 initial_epoch = 0
 epoch_num = 24
@@ -48,9 +49,13 @@ else:
 steps_per_epoch = total_img * (1 - validation_split_ratio) // batch_size
 validation_steps = total_img * validation_split_ratio // batch_size
 
-data_dir = 'icpr/'
-origin_image_dir_name = 'image_10000/'
-origin_txt_dir_name = 'txt_10000/'
+#data_dir = 'icpr/'
+#origin_image_dir_name = 'image_10000/'
+#origin_txt_dir_name = 'txt_10000/'
+data_dir = 'train_6/'
+origin_image_dir_name = 'image_6/'
+origin_txt_dir_name = 'txt_6/'
+
 train_image_dir_name = 'images_%s/' % train_task_id
 train_label_dir_name = 'labels_%s/' % train_task_id
 show_gt_image_dir_name = 'show_gt_images_%s/' % train_task_id
@@ -88,6 +93,9 @@ saved_model_weights_file_path = 'saved_model/east_model_weights_%s_%s.h5' %(trai
 saved_model_load_weights_file_path = 'saved_model/east_model_weights_%s_%s.h5'\
                                 % (load_train_task_id, train_host)
 
+
+#pixel_threshold = 0.9
+#side_vertex_pixel_threshold = 0.9
 pixel_threshold = 0.8
 side_vertex_pixel_threshold = 0.9
 trunc_threshold = 0.3
